@@ -162,6 +162,7 @@ export const isDelegatedEventValid = async (event: Event): Promise<boolean> => {
 }
 
 export const getEventHash = async (event: Event | UnidentifiedEvent | UnsignedEvent): Promise<string> => {
+  console.log('Event getEventHash ====>', JSON.stringify(serializeEvent(event)))
   const id = await secp256k1.utils.sha256(Buffer.from(JSON.stringify(serializeEvent(event))))
 
   return Buffer.from(id).toString('hex')

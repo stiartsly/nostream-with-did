@@ -151,6 +151,8 @@ export class WebSocketAdapter extends EventEmitter implements IWebSocketAdapter 
     let abortable = false
     let messageHandler: IMessageHandler & IAbortable | undefined = undefined
     try {
+      console.log('Receive msg from socket adapter11====>', raw.toString('utf8'))
+      debug('Receive msg from socket adapter22====>', raw.toString('utf8'))
       if (await this.isRateLimited(this.clientAddress.address)) {
         this.sendMessage(createNoticeMessage('rate limited'))
         return

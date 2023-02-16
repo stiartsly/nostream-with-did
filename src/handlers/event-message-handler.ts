@@ -25,8 +25,10 @@ export class EventMessageHandler implements IMessageHandler {
   ) { }
 
   public async handleMessage(message: IncomingEventMessage): Promise<void> {
-    let [, event] = message
+    console.log('EventMessageHandler handleMessage ====>', message)
 
+    let [, event] = message
+    console.log('EventMessageHandler event tags ====>', event.tags);
     event[ContextMetadataKey] = message[ContextMetadataKey]
 
     let reason = await this.isEventValid(event)
