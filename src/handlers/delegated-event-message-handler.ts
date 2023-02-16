@@ -13,7 +13,6 @@ const debug = createLogger('delegated-event-message-handler')
 export class DelegatedEventMessageHandler extends EventMessageHandler implements IMessageHandler {
   public async handleMessage(message: IncomingEventMessage): Promise<void> {
     const [, event] = message
-
     let reason = await this.isEventValid(event)
     if (reason) {
       debug('event %s rejected: %s', event.id, reason)
@@ -44,7 +43,7 @@ export class DelegatedEventMessageHandler extends EventMessageHandler implements
     const [, delegator] = event.tags.find((tag) => tag.length === 4 && tag[0] === EventTags.Delegation)
     const delegatedEvent: DelegatedEvent = {
       ...event,
-        [EventDelegatorMetadataKey]: delegator,
+      [EventDelegatorMetadataKey]: delegator,
     }
 
     const strategy = this.strategyFactory([delegatedEvent, this.webSocket])

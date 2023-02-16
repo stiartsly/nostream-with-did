@@ -35,7 +35,6 @@ export class SubscribeMessageHandler implements IMessageHandler, IAbortable {
   public async handleMessage(message: SubscribeMessage): Promise<void> {
     const subscriptionId = message[1]
     const filters = uniqWith(equals, message.slice(2)) as SubscriptionFilter[]
-
     const reason = this.canSubscribe(subscriptionId, filters)
     if (reason) {
       debug('subscription %s with %o rejected: %s', subscriptionId, filters, reason)
@@ -72,7 +71,7 @@ export class SubscribeMessageHandler implements IMessageHandler, IAbortable {
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         debug('subscription %s aborted: %o', subscriptionId, error)
-       findEvents.destroy()
+        findEvents.destroy()
       } else {
         debug('error streaming events: %o', error)
       }
@@ -89,7 +88,7 @@ export class SubscribeMessageHandler implements IMessageHandler, IAbortable {
     const existingSubscription = subscriptions.get(subscriptionId)
 
     if (existingSubscription?.length && equals(filters, existingSubscription)) {
-        return `Duplicate subscription ${subscriptionId}: Ignorning`
+      return `Duplicate subscription ${subscriptionId}: Ignorning`
     }
 
     const maxSubscriptions = this.settings().limits?.client?.subscription?.maxSubscriptions ?? 0

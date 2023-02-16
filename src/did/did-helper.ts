@@ -2,10 +2,10 @@ import { DefaultDIDAdapter, DID, DIDBackend, DIDDocument } from '@elastosfoundat
 
 export class DidHelper {
     constructor() {
-        this.init()
+        DidHelper.init()
     }
 
-    private init(): string {
+    private static init(): string {
         const currentNet = 'MainNet'.toLowerCase()
         if (!DIDBackend.isInitialized()) {
             DIDBackend.initialize(new DefaultDIDAdapter(currentNet))
@@ -15,6 +15,7 @@ export class DidHelper {
 
     public static resolveDidDocument(didString: string): Promise<DIDDocument> {
         return new Promise((resolve, reject) => {
+            DidHelper.init()
             const userDID = DID.from(didString)
             userDID.resolve().then((userDIDDocument: DIDDocument) => {
                 resolve(userDIDDocument)

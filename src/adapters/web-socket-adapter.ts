@@ -10,14 +10,14 @@ import { IncomingMessage, OutgoingMessage } from '../@types/messages'
 import { IWebSocketAdapter, IWebSocketServerAdapter } from '../@types/adapters'
 import { SubscriptionFilter, SubscriptionId } from '../@types/subscription'
 import { WebSocketAdapterEvent, WebSocketServerAdapterEvent } from '../constants/adapter'
-import { attemptValidation } from '../utils/validation'
+// import { attemptValidation } from '../utils/validation'
 import { ContextMetadataKey } from '../constants/base'
 import { createLogger } from '../factories/logger-factory'
 import { Event } from '../@types/event'
 import { getRemoteAddress } from '../utils/http'
 import { IRateLimiter } from '../@types/utils'
 import { isEventMatchingFilter } from '../utils/event'
-import { messageSchema } from '../schemas/message-schema'
+// import { messageSchema } from '../schemas/message-schema'
 import { Settings } from '../@types/settings'
 import { SocketAddress } from 'net'
 
@@ -156,8 +156,8 @@ export class WebSocketAdapter extends EventEmitter implements IWebSocketAdapter 
         return
       }
 
-      const message = attemptValidation(messageSchema)(JSON.parse(raw.toString('utf8')))
-
+      // const message = attemptValidation(messageSchema)(JSON.parse(raw.toString('utf8')))
+      const message = JSON.parse(raw.toString('utf8'))
       message[ContextMetadataKey] = {
         remoteAddress: this.clientAddress,
       } as ContextMetadata
@@ -167,15 +167,12 @@ export class WebSocketAdapter extends EventEmitter implements IWebSocketAdapter 
         console.error('web-socket-adapter: unhandled message: no handler found:', message)
         return
       }
-
       abortable = typeof messageHandler.abort === 'function'
-
       if (abortable) {
         const handlers = abortableMessageHandlers.get(this.client) ?? []
         handlers.push(messageHandler)
         abortableMessageHandlers.set(this.client, handlers)
       }
-
       await messageHandler.handleMessage(message)
     } catch (error) {
       if (error instanceof Error) {
