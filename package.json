@@ -71,6 +71,7 @@
   },
   "homepage": "https://github.com/Cameri/nostream#readme",
   "devDependencies": {
+    "@elastosfoundation/did-js-sdk": "^2.2.12",
     "@commitlint/cli": "17.2.0",
     "@commitlint/config-conventional": "17.2.0",
     "@cucumber/cucumber": "8.7.0",
