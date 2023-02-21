@@ -1,6 +1,6 @@
-import { Event, ExpiringEvent  } from '../@types/event'
+import { Event, ExpiringEvent } from '../@types/event'
 import { EventRateLimit, FeeSchedule, Settings } from '../@types/settings'
-import { getEventExpiration, getEventProofOfWork, getPubkeyProofOfWork, isEventIdValid, isEventKindOrRangeMatch, isEventSignatureValid, isExpiredEvent } from '../utils/event'
+import { getEventExpiration, getEventProofOfWork, getPubkeyProofOfWork, isDidEventTag, isDidSignatureValid, isEventIdValid, isEventKindOrRangeMatch, isEventSignatureValid, isExpiredEvent } from '../utils/event'
 import { IEventStrategy, IMessageHandler } from '../@types/message-handlers'
 import { ContextMetadataKey } from '../constants/base'
 import { createCommandResult } from '../utils/messages'
@@ -22,7 +22,7 @@ export class EventMessageHandler implements IMessageHandler {
     protected readonly userRepository: IUserRepository,
     private readonly settings: () => Settings,
     private readonly slidingWindowRateLimiter: Factory<IRateLimiter>,
-  ) {}
+  ) { }
 
   public async handleMessage(message: IncomingEventMessage): Promise<void> {
     let [, event] = message
@@ -80,7 +80,7 @@ export class EventMessageHandler implements IMessageHandler {
   }
 
   protected canAcceptEvent(event: Event): string | undefined {
-    const now = Math.floor(Date.now()/1000)
+    const now = Math.floor(Date.now() / 1000)
 
     const limits = this.settings().limits?.event ?? {}
 
@@ -179,9 +179,21 @@ export class EventMessageHandler implements IMessageHandler {
     if (!await isEventIdValid(event)) {
       return 'invalid: event id does not match'
     }
-    if (!await isEventSignatureValid(event)) {
-      return 'invalid: event signature verification failed'
+    return await this.isSignatureValid(event)
+  }
+
+  private async isSignatureValid(event): Promise<string | undefined> {
+    if (isDidEventTag(event)) {
+      if (!await isDidSignatureValid(event)) {
+        return 'invalid: did signature verification failed'
+      }
+    } else {
+      if (!await isEventSignatureValid(event)) {
+        return 'invalid: event signature verification failed'
+      }
     }
+
+    return undefined
   }
 
   protected async isRateLimited(event: Event): Promise<boolean> {
@@ -274,11 +286,11 @@ export class EventMessageHandler implements IMessageHandler {
   protected addExpirationMetadata(event: Event): Event | ExpiringEvent {
     const eventExpiration: number = getEventExpiration(event)
     if (eventExpiration) {
-        const expiringEvent: ExpiringEvent = {
-          ...event,
-          [EventExpirationTimeMetadataKey]: eventExpiration,
-        }
-        return expiringEvent
+      const expiringEvent: ExpiringEvent = {
+        ...event,
+        [EventExpirationTimeMetadataKey]: eventExpiration,
+      }
+      return expiringEvent
     } else {
       return event
     }

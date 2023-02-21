@@ -37,6 +37,7 @@ export enum EventTags {
   Delegation = 'delegation',
   Deduplication = 'd',
   Expiration = 'expiration',
+  Did = 'did',
 }
 
 export enum PaymentsProcessors {

@@ -1,11 +1,13 @@
 import * as secp256k1 from '@noble/secp256k1'
 import { applySpec, converge, curry, mergeLeft, nth, omit, pipe, prop, reduceBy } from 'ramda'
 import { createCipheriv, createHmac, getRandomValues } from 'crypto'
-import cluster from 'cluster'
-
+// eslint-disable-next-line sort-imports
 import { CanonicalEvent, DBEvent, Event, UnidentifiedEvent, UnsignedEvent } from '../@types/event'
 import { EventId, Pubkey, Tag } from '../@types/base'
 import { EventKinds, EventTags } from '../constants/base'
+import cluster from 'cluster'
+
+import { DidHelper } from '../did/did-helper'
 import { EventKindsRange } from '../@types/settings'
 import { fromBuffer } from './transform'
 import { getLeadingZeroBits } from './proof-of-work'
@@ -35,9 +37,9 @@ export const toNostrEvent: (event: DBEvent) => Event = applySpec({
 
 export const isEventKindOrRangeMatch = ({ kind }: Event) =>
   (item: EventKinds | EventKindsRange) =>
-  typeof item === 'number'
-  ? item === kind
-  : kind >= item[0] && kind <= item[1]
+    typeof item === 'number'
+      ? item === kind
+      : kind >= item[0] && kind <= item[1]
 
 export const isEventMatchingFilter = (filter: SubscriptionFilter) => (event: Event): boolean => {
   const startsWith = (input: string) => (prefix: string) => input.startsWith(prefix)
@@ -165,6 +167,16 @@ export const getEventHash = async (event: Event | UnidentifiedEvent | UnsignedEv
   return Buffer.from(id).toString('hex')
 }
 
+export const identifyEvent = async (event: UnidentifiedEvent): Promise<UnsignedEvent> => {
+  const id = await getEventHash(event)
+
+  return { ...event, id }
+}
+
+export const isDidSignatureValid = async (event: Event): Promise<boolean> => {
+  return DidHelper.verify(event.pubkey, event.sig, Buffer.from(event.id))
+}
+
 export const isEventIdValid = async (event: Event): Promise<boolean> => {
   return event.id === await getEventHash(event)
 }
@@ -173,24 +185,20 @@ export const isEventSignatureValid = async (event: Event): Promise<boolean> => {
   return secp256k1.schnorr.verify(event.sig, event.id, event.pubkey)
 }
 
-export const identifyEvent = async (event: UnidentifiedEvent): Promise<UnsignedEvent> => {
-  const id = await getEventHash(event)
 
-  return { ...event, id }
-}
 
 export const getPrivateKeyFromSecret =
   (secret: string) => (data: string | Buffer): string => {
-  if (process.env.RELAY_PRIVATE_KEY) {
-    return process.env.RELAY_PRIVATE_KEY
+    if (process.env.RELAY_PRIVATE_KEY) {
+      return process.env.RELAY_PRIVATE_KEY
+    }
+
+    const hmac = createHmac('sha256', secret)
+
+    hmac.update(typeof data === 'string' ? Buffer.from(data) : data)
+
+    return hmac.digest().toString('hex')
   }
-
-  const hmac = createHmac('sha256', secret)
-
-  hmac.update(typeof data === 'string' ? Buffer.from(data) : data)
-
-  return hmac.digest().toString('hex')
-}
 
 export const getPublicKey = (privkey: string | Buffer) => Buffer.from(secp256k1.getPublicKey(privkey, true)).subarray(1).toString('hex')
 
@@ -204,7 +212,7 @@ export const encryptKind4Event = (
   receiverPubkey: Pubkey,
 ) => (event: UnsignedEvent): UnsignedEvent => {
   const key = secp256k1
-    .getSharedSecret(senderPrivkey,`02${receiverPubkey}`, true)
+    .getSharedSecret(senderPrivkey, `02${receiverPubkey}`, true)
     .subarray(1)
 
   const iv = getRandomValues(new Uint8Array(16))
@@ -289,8 +297,19 @@ export const getEventExpiration = (event: Event): number | undefined => {
   const expirationTime = Number(rawExpirationTime)
   if ((Number.isSafeInteger(expirationTime) && Math.log10(expirationTime))) {
     return expirationTime
-  } 
+  }
 }
+
+export const isDidEventTag = (event: Event): boolean => {
+  const hasDidTag = event.tags.find((tag) => tag[0] === EventTags.Did) ?? false
+
+  if (!hasDidTag) {
+    return false
+  } else {
+    return true
+  }
+}
+
 
 export const getEventProofOfWork = (eventId: EventId): number => {
   return getLeadingZeroBits(Buffer.from(eventId, 'hex'))
