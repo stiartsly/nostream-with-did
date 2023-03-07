@@ -10,14 +10,14 @@ import { IncomingMessage, OutgoingMessage } from '../@types/messages'
 import { IWebSocketAdapter, IWebSocketServerAdapter } from '../@types/adapters'
 import { SubscriptionFilter, SubscriptionId } from '../@types/subscription'
 import { WebSocketAdapterEvent, WebSocketServerAdapterEvent } from '../constants/adapter'
-import { attemptValidation } from '../utils/validation'
+// import { attemptValidation } from '../utils/validation'
 import { ContextMetadataKey } from '../constants/base'
 import { createLogger } from '../factories/logger-factory'
 import { Event } from '../@types/event'
 import { getRemoteAddress } from '../utils/http'
 import { IRateLimiter } from '../@types/utils'
 import { isEventMatchingFilter } from '../utils/event'
-import { messageSchema } from '../schemas/message-schema'
+// import { messageSchema } from '../schemas/message-schema'
 import { Settings } from '../@types/settings'
 import { SocketAddress } from 'net'
 
@@ -158,31 +158,36 @@ export class WebSocketAdapter extends EventEmitter implements IWebSocketAdapter 
         return
       }
 
-      const message = attemptValidation(messageSchema)(JSON.parse(raw.toString('utf8')))
-
+      // const message = attemptValidation(messageSchema)(JSON.parse(raw.toString('utf8')))
+      const message = JSON.parse(raw.toString('utf8'))
+      console.log('Receive message====>', message)
       message[ContextMetadataKey] = {
         remoteAddress: this.clientAddress,
       } as ContextMetadata
+      console.log('Receive message[ContextMetadataKey]====>', message[ContextMetadataKey])
 
       messageHandler = this.createMessageHandler([message, this]) as IMessageHandler & IAbortable
       if (!messageHandler) {
         console.error('web-socket-adapter: unhandled message: no handler found:', message)
         return
       }
-
+      console.log('2222222222222222')
       abortable = typeof messageHandler.abort === 'function'
-
+      console.log('abortable ====>', abortable)
       if (abortable) {
         const handlers = abortableMessageHandlers.get(this.client) ?? []
         handlers.push(messageHandler)
         abortableMessageHandlers.set(this.client, handlers)
       }
-
+      console.log('33333333333')
       await messageHandler.handleMessage(message)
+      console.log('3333333333355555555555555555555')
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           console.error(`web-socket-adapter: abort from client ${this.clientId} (${this.getClientAddress()})`)
+          console.log('this.clientId====>', this.clientId)
+          console.log('this.getClientAddress()====>', this.getClientAddress())
         } else if (error.name === 'SyntaxError' || error.name === 'ValidationError') {
           if (typeof (error as any).annotate === 'function') {
             debug('invalid message client %s (%s): %o', this.clientId, this.getClientAddress(), (error as any).annotate())
@@ -191,10 +196,13 @@ export class WebSocketAdapter extends EventEmitter implements IWebSocketAdapter 
           }
           this.sendMessage(createNoticeMessage(`invalid: ${error.message}`))
         }
+        console.log('44444444444', error)
       } else {
         console.error('web-socket-adapter: unable to handle message:', error)
+        console.log('55555555555', error)
       }
     } finally {
+      console.log('6666666666666', abortable, messageHandler)
       if (abortable && messageHandler) {
         const handlers = abortableMessageHandlers.get(this.client)
         if (handlers) {

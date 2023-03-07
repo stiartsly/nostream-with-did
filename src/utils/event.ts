@@ -175,7 +175,12 @@ export const identifyEvent = async (event: UnidentifiedEvent): Promise<UnsignedE
 }
 
 export const isDidSignatureValid = async (event: Event): Promise<boolean> => {
-  return DidHelper.verify(event.pubkey, event.sig, Buffer.from(event.id))
+  console.log('isDidSignatureValid pubkey====>', event.pubkey)
+
+  const didString = Buffer.from(event.pubkey, 'hex').toString('utf8')
+  console.log('didString result====>', didString)
+
+  return DidHelper.verify(didString, event.sig, Buffer.from(event.id))
 }
 
 export const isEventIdValid = async (event: Event): Promise<boolean> => {

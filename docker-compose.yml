@@ -4,7 +4,7 @@ services:
     container_name: nostream
     environment:
       SECRET: changeme
-      RELAY_PORT: 8008
+      RELAY_PORT: 80
       # Master
       NOSTR_CONFIG_DIR: /home/node/.nostr
       DB_HOST: nostream-db
@@ -42,7 +42,10 @@ services:
     volumes:
       - ${PWD}/.nostr:/home/node/.nostr
     ports:
-      - 127.0.0.1:8008:8008
+      - 127.0.0.1:80:80
+      - 127.0.0.1:443:443
+      - 192.168.3.8:80:80
+      - 192.168.3.8:443:443
     depends_on:
       nostream-cache:
         condition: service_healthy
